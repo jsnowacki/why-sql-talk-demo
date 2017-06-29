@@ -1,4 +1,6 @@
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.functions._
 
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
@@ -117,6 +119,7 @@ object SparkSQLDemo {
             .appName("SparkSQLDemo")
             .master("local[*]")
             .getOrCreate()
+        import spark.implicits._
 
         val sales = spark.read
             .options(Map("header" -> "true", "inferSchema" -> "true"))
@@ -178,5 +181,18 @@ object SparkSQLDemo {
                   |ORDER BY `Avg Revenue` DESC
                 """.stripMargin
         spark.sql(query).show()
+
+
+        println("\n**** Windows functions (Spark SQL) ****")
+        val w = Window.partitionBy("Product line")
+            .orderBy($"Revenue".desc)
+
+        val df = sales.select(
+                $"Product line",
+                $"Revenue",
+                rank.over(w).as("Rank"),
+                ($"Revenue" - expr("(SELECT AVG(Revenue) FROM sales)")).as("Diff Revenue")
+            ).where("Rank <= 3")
+        df.show()
     }
 }
