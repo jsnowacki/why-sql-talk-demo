@@ -8,7 +8,7 @@ import scala.util.Try
 import scala.util.control.Breaks._
 
 /**
-  * Created by jnowac01 on 27.06.2017.
+  * Spark SQL demo
   */
 object SparkSQLDemo {
     case class SalesRow (retailerCountry: String,
