@@ -182,6 +182,24 @@ object SparkSQLDemo {
                 """.stripMargin
         spark.sql(query).show()
 
+        println("\n**** Windows functions (SQL) ****")
+        query = """
+                  |SELECT  *
+                  |FROM (
+                  | SELECT
+                  |   `Product line`,
+                  |   `Revenue`,
+                  |   RANK() OVER(
+                  |     PARTITION BY `Product line` ORDER BY Revenue DESC
+                  |     ) AS Rank,
+                  |   (Revenue - (SELECT AVG(Revenue) FROM sales))
+                  |     AS `Diff Revenue`
+                  |  FROM sales
+                  |  )
+                  |WHERE Rank <= 3
+                  |ORDER BY `Product line`
+                """.stripMargin
+        spark.sql(query).show()
 
         println("\n**** Windows functions (Spark SQL) ****")
         val w = Window.partitionBy("Product line")
@@ -194,5 +212,48 @@ object SparkSQLDemo {
                 ($"Revenue" - expr("(SELECT AVG(Revenue) FROM sales)")).as("Diff Revenue")
             ).where("Rank <= 3")
         df.show()
+
+        println("\n**** ROLLUP (SQL) ****")
+        query = """
+                  |SELECT
+                  |    `Product line`,
+                  |    Year,
+                  |    COUNT(*) AS Count,
+                  |    AVG(Revenue) AS `Avg Revenue`,
+                  |    SUM(Revenue) AS `Sum Revenue`
+                  |FROM sales
+                  |GROUP BY `Product line`, Year WITH ROLLUP
+                  |ORDER BY `Product line`, Year
+                """.stripMargin
+        spark.sql(query).show()
+
+        println("\n**** CUBE (SQL) ****")
+        query = """
+                  |SELECT
+                  |    `Product line`,
+                  |    Year,
+                  |    COUNT(*) AS Count,
+                  |    AVG(Revenue) AS `Avg Revenue`,
+                  |    SUM(Revenue) AS `Sum Revenue`
+                  |FROM sales
+                  |GROUP BY `Product line`, Year WITH CUBE
+                  |ORDER BY `Product line`, Year
+                """.stripMargin
+        spark.sql(query).show()
+
+        println("\n**** GROUPING SETS (SQL) ****")
+        query = """
+                  |SELECT
+                  |    `Product line`,
+                  |    Year,
+                  |    COUNT(*) AS Count,
+                  |    AVG(Revenue) AS `Avg Revenue`,
+                  |    SUM(Revenue) AS `Sum Revenue`
+                  |FROM sales
+                  |GROUP BY `Product line`, Year
+                  |GROUPING SETS (`Product line`, Year, ())
+                  |ORDER BY `Product line`, Year
+                """.stripMargin
+        spark.sql(query).show()
     }
 }
